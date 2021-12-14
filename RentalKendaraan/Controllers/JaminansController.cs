@@ -19,9 +19,46 @@ namespace RentalKendaraan.Controllers
         }
 
         // GET: Jaminans
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string ktsd, string searchString, string sortOrder, string currentFilter, int? pageNumber)
         {
-            return View(await _context.Jaminans.ToListAsync());
+            var ktsdList = new List<string>();
+            var ktsdQuery = from d in _context.Jaminans orderby d.NamaJaminan select d.NamaJaminan;
+            ktsdList.AddRange(ktsdQuery.Distinct());
+            ViewBag.ktsd = new SelectList(ktsdList);
+            var menu = from m in _context.Jaminans select m;
+            if (!string.IsNullOrEmpty(ktsd))
+            {
+                menu = menu.Where(x => x.NamaJaminan == ktsd);
+            }
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                menu = menu.Where(s => s.NamaJaminan.Contains(searchString));
+            }
+
+            ViewData["CurrentSort"] = sortOrder;
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+            ViewData["CurrentFilter"] = searchString;
+            int pageSize = 5;
+
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    menu = menu.OrderByDescending(s => s.NamaJaminan);
+                    break;
+                default: //name ascending
+                    menu = menu.OrderBy(s => s.NamaJaminan);
+                    break;
+            }
+
+            return View(await PaginatedList<Jaminan>.CreateAsync(menu.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: Jaminans/Details/5
@@ -49,8 +86,8 @@ namespace RentalKendaraan.Controllers
         }
 
         // POST: Jaminans/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for 
-        // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("IdJaminan,NamaJaminan")] Jaminan jaminan)
@@ -81,8 +118,8 @@ namespace RentalKendaraan.Controllers
         }
 
         // POST: Jaminans/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for 
-        // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("IdJaminan,NamaJaminan")] Jaminan jaminan)

@@ -19,9 +19,46 @@ namespace RentalKendaraan.Controllers
         }
 
         // GET: JenisKendaraans
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string ktsd, string searchString, string sortOrder, string currentFilter, int? pageNumber)
         {
-            return View(await _context.JenisKendaraans.ToListAsync());
+            var ktsdList = new List<string>();
+            var ktsdQuery = from d in _context.JenisKendaraans orderby d.NamaJenisKendaraan select d.NamaJenisKendaraan;
+            ktsdList.AddRange(ktsdQuery.Distinct());
+            ViewBag.ktsd = new SelectList(ktsdList);
+            var menu = from m in _context.JenisKendaraans select m;
+            if (!string.IsNullOrEmpty(ktsd))
+            {
+                menu = menu.Where(x => x.NamaJenisKendaraan == ktsd);
+            }
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                menu = menu.Where(s => s.NamaJenisKendaraan.Contains(searchString));
+            }
+
+            ViewData["CurrentSort"] = sortOrder;
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+            ViewData["CurrentFilter"] = searchString;
+            int pageSize = 5;
+
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    menu = menu.OrderByDescending(s => s.NamaJenisKendaraan);
+                    break;
+                default: //name ascending
+                    menu = menu.OrderBy(s => s.NamaJenisKendaraan);
+                    break;
+            }
+
+            return View(await PaginatedList<JenisKendaraan>.CreateAsync(menu.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: JenisKendaraans/Details/5
@@ -49,8 +86,8 @@ namespace RentalKendaraan.Controllers
         }
 
         // POST: JenisKendaraans/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for 
-        // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("IdJenisKendaraan,NamaJenisKendaraan")] JenisKendaraan jenisKendaraan)
@@ -81,8 +118,8 @@ namespace RentalKendaraan.Controllers
         }
 
         // POST: JenisKendaraans/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for 
-        // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("IdJenisKendaraan,NamaJenisKendaraan")] JenisKendaraan jenisKendaraan)

@@ -1,4 +1,4 @@
-﻿@model IEnumerable<RentalKendaraan.Models.Jaminan>
+﻿@model PaginatedList<RentalKendaraan.Models.Jaminan>
 
 @{
     ViewData["Title"] = "Index";
@@ -9,12 +9,19 @@
 <p>
     <a asp-action="Create">Create New</a>
 </p>
-<p>Ketersediaan : <select>Pilih Ketersediaan</select> Cari Data : <input /><button>Filter</button></p>
+@using (Html.BeginForm("Index", "Jaminans", FormMethod.Get))
+{
+    <p>
+        Nama Jaminan : @Html.DropDownList("ktsd", "Pilih Nama Jaminan")
+        Cari Data : @Html.TextBox("searchString")
+        <input type="submit" value="Filter" />
+    </p>
+}
 <table class="table">
     <thead>
         <tr>
             <th>
-                @Html.DisplayName("Nama Jaminan")
+                <a asp-action="Index" asp-route-sortOrder="@ViewData["NameSortParm"]" asp-route-currentFilter="@ViewData["CurrentFilter"]">Nama Jaminan</a>
             </th>
             <th></th>
         </tr>
@@ -27,11 +34,29 @@
                     @Html.DisplayFor(modelItem => item.NamaJaminan)
                 </td>
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.IdJaminan"><i class="fa fa-marker fa-lg"></i></a> |
-                    <a asp-action="Details" asp-route-id="@item.IdJaminan"><i class="fas fa-list fa-lg"></i></a> |
-                    <a asp-action="Delete" asp-route-id="@item.IdJaminan"><i class="fa fa-trash-alt fa-lg"></i></a>
+                    <a asp-action="Edit" asp-route-id="@item.IdJaminan"><i class="fas fa-marker fa-lg"></i></a> |
+                    <a asp-action="Details" asp-route-id="@item.IdJaminan"><i class="fas fa-list"></i></a> |
+                    <a asp-action="Delete" asp-route-id="@item.IdJaminan"><i class="fas fa-trash fa-lg"></i></a>
                 </td>
             </tr>
         }
     </tbody>
 </table>
+@{
+    var prevDisabled = !Model.HasPreviousPage ? "disabled" : "";
+    var nextDisabled = !Model.HasNextPage ? "disabled" : "";
+}
+<a asp-action="Index"
+   asp-route-sortOrder="@ViewData["CurrentSort"]"
+   asp-route-pageNumber="@(Model.PageIndex - 1)"
+   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+   class="btn btn-default @prevDisabled">
+    Previous
+</a>
+<a asp-action="Index"
+   asp-route-sortOrder="@ViewData["CurrentSort"]"
+   asp-route-pageNumber="@(Model.PageIndex + 1)"
+   asp-route-currentFilter="@ViewData["CurrentFilter"]"
+   class="btn btn-default @nextDisabled">
+    Next
+</a>

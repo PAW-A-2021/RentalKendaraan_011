@@ -19,10 +19,51 @@ namespace RentalKendaraan.Controllers
         }
 
         // GET: Customers
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string ktsd, string searchString, string sortOrder, string currentFilter, int? pageNumber)
         {
-            var rentKendaraanContext = _context.Customers.Include(c => c.IdGenderNavigation);
-            return View(await rentKendaraanContext.ToListAsync());
+            var ktsdList = new List<string>();
+            var ktsdQuery = from d in _context.Customers orderby d.IdGender select d.IdGender.ToString();
+            ktsdList.AddRange(ktsdQuery.Distinct());
+            ViewBag.ktsd = new SelectList(ktsdList);
+            var menu = from m in _context.Customers.Include(k => k.IdGenderNavigation) select m;
+            if (!string.IsNullOrEmpty(ktsd))
+            {
+                menu = menu.Where(x => x.IdGender.ToString() == ktsd);
+            }
+            if (!string.IsNullOrEmpty(searchString))
+            {
+                menu = menu.Where(s => s.NamaCustomer.Contains(searchString) || s.Nik.Contains(searchString) || s.Alamat.Contains(searchString) || s.NoHp.Contains(searchString));
+            }
+            ViewData["CurrentSort"] = sortOrder;
+            if (searchString != null)
+            {
+                pageNumber = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+            ViewData["NameSortParm"] = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
+            ViewData["DateSortParm"] = sortOrder == "Date" ? "date_desc" : "Date";
+
+            switch (sortOrder)
+            {
+                case "name_desc":
+                    menu = menu.OrderByDescending(s => s.NamaCustomer);
+                    break;
+                case "Date":
+                    menu = menu.OrderBy(s => s.IdGenderNavigation.NamaGender);
+                    break;
+                case "date_desc":
+                    menu = menu.OrderByDescending(s => s.IdGenderNavigation.NamaGender);
+                    break;
+                default: //name ascending
+                    menu = menu.OrderBy(s => s.NamaCustomer);
+                    break;
+            }
+            ViewData["CurrentFilter"] = searchString;
+            int pageSize = 5;
+            return View(await PaginatedList<Customer>.CreateAsync(menu.AsNoTracking(), pageNumber ?? 1, pageSize));
         }
 
         // GET: Customers/Details/5
@@ -52,8 +93,8 @@ namespace RentalKendaraan.Controllers
         }
 
         // POST: Customers/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for 
-        // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("IdCustomer,NamaCustomer,Nik,Alamat,NoHp,IdGender")] Customer customer)
@@ -86,8 +127,8 @@ namespace RentalKendaraan.Controllers
         }
 
         // POST: Customers/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for 
-        // more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        // To protect from overposting attacks, enable the specific properties you want to bind to.
+        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("IdCustomer,NamaCustomer,Nik,Alamat,NoHp,IdGender")] Customer customer)
